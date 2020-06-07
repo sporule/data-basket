@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  build:
+  Build and Release:
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +32,7 @@ jobs:
     - name: Test
       run: go test -v .
 
-    - name: Build
+    - name: Build Binaries
       run: |
         env GOOS=windows GOARCH=386 go build -v -o ./windows/data-basket.exe .
         cp config.json ./windows/
