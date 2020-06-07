@@ -20,10 +20,18 @@ func main() {
 
 	//load config
 	flag.Parse()
+	var configPath string
 	if flag.NArg() == 0 {
-		panic("Could not find config file, please check the path")
+		fmt.Printf("Could not find config file, loading default config.json file")
+		_, err := os.Stat("config.json")
+		if err != nil {
+			panic("Could not find default config.json file. Please pass in config file or create default config.json file")
+		}
+		configPath = "config.json"
+	} else {
+		configPath = flag.Arg(0)
 	}
-	configPath := flag.Arg(0)
+
 	fileName, rowsLimit, columnNames, columnPatterns := readConfig(configPath)
 	fmt.Printf("Writing %d rows to %v with column names: %v \n", rowsLimit, fileName, columnNames)
 

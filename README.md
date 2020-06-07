@@ -41,7 +41,7 @@
 }
 ```
 3. Length is required when you defined the regex, see above examples. Otherwise each columns will return the length of Max Int8. 
-4. Run the binary in terminal and pass the config file as argument:
+4. Run the binary in terminal and pass the config file as argument, it will use config.json as default config if you leave the argument empty:
 
 ```bash
 ./data-basket config.json
