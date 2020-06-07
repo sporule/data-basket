@@ -38,7 +38,7 @@
     }
 }
 ```
-3. Length is required when you defined the regex, see above examples. Otherwise each columns will return the length of Max Int64. 
+3. Length is required when you defined the regex, see above examples. Otherwise each columns will return the length of Max Int8. 
 4. Run the binary in terminal and pass the config file as argument:
 
 ```bash

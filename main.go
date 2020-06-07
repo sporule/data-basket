@@ -110,7 +110,7 @@ func generateRows(columnPatterns []string, rowDataChan chan string) {
 	for {
 		var row []string
 		for _, generator := range generators {
-			data := generator.Generate(math.MaxInt64)
+			data := generator.Generate(math.MaxInt8)
 			row = append(row, data)
 		}
 		rowDataChan <- strings.Join(row[:], ",")
