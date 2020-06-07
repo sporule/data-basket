@@ -6,7 +6,7 @@
 
 ## Latest Update
 
-### 2020-06-06
+### v0.1
 
 - Initial Release
 
