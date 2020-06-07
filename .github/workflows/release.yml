@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  Build and Release:
+  BuildandRelease:
     name: Build
     runs-on: ubuntu-latest
     steps:
