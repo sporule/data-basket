@@ -35,11 +35,11 @@ jobs:
     - name: Build
       run: |
         env GOOS=windows GOARCH=386 go build -v -o ./windows/data-basket.exe .
-        cp config.json build/windows/
+        cp config.json ./windows/
         env GOOS=linux GOARCH=386 go build -v -o ./linux/data-basket .
-        cp config.json build/linux/
+        cp config.json ./linux/
         env GOOS=darwin GOARCH=386 go build -v -o ./mac/data-basket .
-        cp config.json build/mac/
+        cp config.json ./mac/
     
     - name: Create Zip Release Files
       uses: montudor/action-zip@v0.1.0
