@@ -17,42 +17,7 @@
 
 [Reggen](https://github.com/lucasjones/reggen)
 
-## Quick Start - Set up
-
-### Fork This Repo to your GitHub Account
-
-![Fork](https://i.imgur.com/VSqrEHf.png)
-
-### Update the Configuration Files
-
-#### General Configuration File
-
-_config.js is the configuration file for your site.
-
-![Config](https://i.imgur.com/9Rl3J3B.png)
-
-**Available Configs:**
-
-| Name              | Value                                                                                               | Example                           | Type    |
-| ----------------- | --------------------------------------------------------------------------------------------------- | --------------------------------- | ------- |
-| Site              | The name of the site                                                                                | "Sporule"                         | string  |
-| url               | The link to your site                                                                               | "https://www.sporule.com"         | string  |
-| description       | short description about your site                                                                   | "Sporule is a micro blog system"  | string  |
-| keywords          | keywords for SEO purpose                                                                            | "blog,post"                       | string  |
-| logo              | The logo                                                                                            | "https://i.imgur.com/MrRLOC4.png" | string  |
-| disqusShortname   | Disqus is a comment system, you will get a shortname after having an account with them              | NA                                | string  |
-| postPerPage       | How many posts do you want to show per page?                                                        | 8                                 | int     |
-| googleAnaltics    | Google Analytics Tag if you are using Google analytics                                              | UA-11402457-1                     | string  |
-| alwaysRefreshPost | The system will always get the latest content of the post rather than using the cache if it is true | false                             | boolean |
-| gh_custom_domain  | Put this to true if you are using github pages with custom domain                                   | false                             | boolean |
-
-#### Theme Configurations
-
-These configuration will be used for that specific theme only, they are located under templates/_templateConfig.js. Look at the theme documentation to understand what is available. You will not be able to change the template configuration unless you fork the template repo. Please see change templates section for more details.
-
-![TemplateConfig](https://i.imgur.com/mVoIG2w.png)
-
-## Quick Start - Your Content
+## Quick Start
 
 1. Download the latest binary from the [release page](https://github.com/sporule/data-basket/releases)
 2. Create your config file. The config file is in json format with below options.
