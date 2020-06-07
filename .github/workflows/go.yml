@@ -29,15 +29,65 @@ jobs:
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
         fi
-
-    - name: Build Windows Binary
-      run: env GOOS=windows GOARCH=386 go build -v -o build/windows/data-basket.exe .
     
-    - name: Build Linux Binary
-      run: env GOOS=linux GOARCH=386 go build -v -o build/linux/data-basket .
-    
-    - name: Build Mac Binary
-      run: env GOOS=darwin GOARCH=386 go build -v -o build/mac/data-basket .
-      
     - name: Test
       run: go test -v .
+
+    - name: Build
+      run: |
+        env GOOS=windows GOARCH=386 go build -v -o build/windows/data-basket.exe .
+        env GOOS=linux GOARCH=386 go build -v -o build/linux/data-basket .
+        env GOOS=darwin GOARCH=386 go build -v -o build/mac/data-basket .
+    
+    - name: Create Zip Release Files
+      uses: montudor/action-zip@v0.1.0
+      with:
+        args:  zip -qq -r ./build/data-basket-windows.zip ./build/windows
+    - uses: montudor/action-zip@v0.1.0
+      with:
+        args:  zip -qq -r ./build/data-basket-linux.zip ./build/linux
+    - uses: montudor/action-zip@v0.1.0
+      with:
+        args:  zip -qq -r ./build/data-basket-mac.zip ./build/mac
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset Windows
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/data-basket-windows.zip
+        asset_name: data-basket-windows.zip
+        asset_content_type: application/zip
+    
+    - name: Upload Linux Release Asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./build/data-basket-linux.zip
+        asset_name: data-basket-linux.zip
+        asset_content_type: application/zip
+        
+    - name: Upload Mac Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/data-basket-mac.zip
+        asset_name: data-basket-mac.zip
+        asset_content_type: application/zip
+
