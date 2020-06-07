@@ -44,13 +44,13 @@ jobs:
     - name: Create Zip Release Files
       uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq -r ./build/data-basket-windows.zip ./windows
+        args:  zip -qq -r ./data-basket-windows.zip ./windows
     - uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq -r ./build/data-basket-linux.zip ./linux
+        args:  zip -qq -r ./data-basket-linux.zip ./linux
     - uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq -r ./build/data-basket-mac.zip ./mac
+        args:  zip -qq -r ./data-basket-mac.zip ./mac
     
     - name: Create Release
       id: create_release
@@ -69,7 +69,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/data-basket-windows.zip
+        asset_path: ./data-basket-windows.zip
         asset_name: data-basket-windows.zip
         asset_content_type: application/zip
     
@@ -79,7 +79,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: ./build/data-basket-linux.zip
+        asset_path: ./data-basket-linux.zip
         asset_name: data-basket-linux.zip
         asset_content_type: application/zip
         
@@ -89,6 +89,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/data-basket-mac.zip
+        asset_path: ./data-basket-mac.zip
         asset_name: data-basket-mac.zip
         asset_content_type: application/zip
