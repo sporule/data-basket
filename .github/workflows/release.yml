@@ -1,8 +1,7 @@
-name: Go
+name: Release
 
 on:
   push:
-    branches: [ master ]
     tags:
       - 'v*'
 
@@ -35,23 +34,23 @@ jobs:
 
     - name: Build
       run: |
-        env GOOS=windows GOARCH=386 go build -v -o build/windows/data-basket.exe .
+        env GOOS=windows GOARCH=386 go build -v -o ./windows/data-basket.exe .
         cp config.json build/windows/
-        env GOOS=linux GOARCH=386 go build -v -o build/linux/data-basket .
+        env GOOS=linux GOARCH=386 go build -v -o ./linux/data-basket .
         cp config.json build/linux/
-        env GOOS=darwin GOARCH=386 go build -v -o build/mac/data-basket .
+        env GOOS=darwin GOARCH=386 go build -v -o ./mac/data-basket .
         cp config.json build/mac/
     
     - name: Create Zip Release Files
       uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq ./build/data-basket-windows.zip ./build/windows
+        args:  zip -qq -r ./build/data-basket-windows.zip ./windows
     - uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq ./build/data-basket-linux.zip ./build/linux
+        args:  zip -qq -r ./build/data-basket-linux.zip ./linux
     - uses: montudor/action-zip@v0.1.0
       with:
-        args:  zip -qq ./build/data-basket-mac.zip ./build/mac
+        args:  zip -qq -r ./build/data-basket-mac.zip ./mac
     
     - name: Create Release
       id: create_release
@@ -93,4 +92,3 @@ jobs:
         asset_path: ./build/data-basket-mac.zip
         asset_name: data-basket-mac.zip
         asset_content_type: application/zip
-
