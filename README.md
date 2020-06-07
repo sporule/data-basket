@@ -1,5 +1,7 @@
 # Data Basket
 
+![Go](https://github.com/sporule/data-basket/workflows/Go/badge.svg?branch=master)
+
 > A test data generator through Regex
 
 ## Latest Update
