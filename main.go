@@ -26,8 +26,8 @@ func main() {
 	columnNames := getMapKeys(columns)
 	writeToFile(strings.Join(columnNames[:], ",")+"\n", fileName)
 
-	cacheDict, _ := getCacheTables(columns)
-	fmt.Printf("%v", cacheDict)
+	presets, mappings := generatePresets(columns)
+	fmt.Printf("%v", presets)
 	// //run goroutine jobs to generate rows
 	// goroutineSize := runtime.NumCPU() * 4
 	// fmt.Printf("Go Routine Size: %d \n", goroutineSize)
@@ -57,23 +57,25 @@ func main() {
 	// fmt.Printf("Total Time used: %v", time.Since(start))
 }
 
-func getCacheTables(columns map[string]interface{}) (tables map[string][]string, mappings map[string]interface{}) {
+func generatePresets(columns map[string]interface{}) (presets map[string][]string, mappings map[string]map[string]string) {
 	sortedByGroupMap := make(map[int][]interface{})
-	tables = make(map[string][]string)
+	presets = make(map[string][]string)
+	mappings = make(map[string]map[string]string)
 	for k, v := range columns {
-		//check if the columns are part of a group
-		_, foundKey := v.(map[string]interface{})["Group"]
-		if !foundKey {
-			//check if the columns has size property so we need to generate enough unique random examples
-			_, foundKey := v.(map[string]interface{})["Size"]
-			if foundKey {
+		//check if the columns are part of a group or has size property.
+		_, hasGroup := v.(map[string]interface{})["Group"]
+		_, hasSize := v.(map[string]interface{})["Size"]
+		if !hasGroup || !hasSize {
+			//It does not have group or size property means we don't need to generate mapping presets for it. It will ignore group property if size property does not exist.
+			//check if the columns has size property so we know if we need to generate presets
+			if hasSize {
 				size := int(v.(map[string]interface{})["Size"].(float64))
 				generator := createGenerator(v.(map[string]interface{})["Pattern"].(string))
-				for len(tables[k]) < size {
+				for len(presets[k]) < size {
 					//generate enough unique example
-					tables[k] = append(tables[k], generator.Generate(math.MaxInt8))
-					if len(tables[k]) >= size {
-						tables[k] = unique(tables[k])
+					presets[k] = append(presets[k], generator.Generate(math.MaxInt8))
+					if len(presets[k]) >= size {
+						presets[k] = unique(presets[k])
 					}
 				}
 			}
@@ -85,25 +87,55 @@ func getCacheTables(columns map[string]interface{}) (tables map[string][]string,
 		column[k] = v
 		sortedByGroupMap[group] = append(sortedByGroupMap[group], column)
 	}
+
 	for _, v := range sortedByGroupMap {
-		//sort the group by size in asc
+		//sort the group by size in asc as smaller size table will need to generate first and bigger size table will use them as reference
 		sort.Slice(v, func(i, j int) bool {
 			//get the map keys
 			iKey := getMapKeys(v[i].(map[string]interface{}))[0]
 			jKey := getMapKeys(v[j].(map[string]interface{}))[0]
-			//check if they have size property, if not then they will be the biggest
-			_, found := v[i].(map[string]interface{})[iKey].(map[string]interface{})["Size"]
-			if !found {
-				return false
-			}
-			_, found = v[j].(map[string]interface{})[jKey].(map[string]interface{})["Size"]
-			if !found {
-				return true
-			}
 			return int(v[i].(map[string]interface{})[iKey].(map[string]interface{})["Size"].(float64)) < int(v[j].(map[string]interface{})[jKey].(map[string]interface{})["Size"].(float64))
 		})
+		//generate tables and mappings for this group
+		for i, value := range v {
+			key := getMapKeys(value.(map[string]interface{}))[0]
+			column := value.(map[string]interface{})[key].(map[string]interface{})
+			_, foundKey := column["Size"]
+			if foundKey {
+				//check if the columns has size property so we need to generate enough unique random examples
+				size := int(column["Size"].(float64))
+				generator := createGenerator(column["Pattern"].(string))
+				for len(presets[key]) < size {
+					//generate enough unique example
+					presets[key] = append(presets[key], generator.Generate(math.MaxInt8))
+					if len(presets[key]) >= size {
+						presets[key] = unique(presets[key])
+					}
+				}
+				if i > 0 {
+					// create mapping table
+					prevValue := v[i-1].(map[string]interface{})
+					prevKey := getMapKeys(prevValue)[0]
+					prevTableLength := len(presets[prevKey])
+					prevKeyIndex := 0
+					//populate mappings table
+					for _, item := range presets[key] {
+						if prevKeyIndex >= prevTableLength {
+							//looping through the values to make sure releatively equal mappings
+							prevKeyIndex = 0
+						}
+						mapping := make(map[string]string)
+						mapping["Value"] = presets[prevKey][prevKeyIndex]
+						mapping["Column"] = prevKey
+						mappings[key+item] = mapping
+
+						prevKeyIndex++
+					}
+				}
+			}
+		}
 	}
-	return tables, mappings
+	return presets, mappings
 }
 
 func unique(strSlice []string) []string {
