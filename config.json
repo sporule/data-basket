@@ -2,7 +2,32 @@
     "fileName": "output.csv",
     "rows": 5000000,
     "columns": {
-        "Column1": "Column1\\d{1,3}[A-Z]{1,3}",
-        "Column2": "Column2\\d{1,3}[A-Z]{1,3}"
+        "Column1": {
+            "Pattern":"Column1\\d{1,3}[A-Z]{1,3}",
+            "Size":1000,
+            "Group":1
+        },
+        "Column2": {
+            "Pattern":"Column2\\d{1,3}[A-Z]{1,3}",
+            "Size":1000,
+            "Group":1
+        },
+        "Column3": {
+            "Pattern":"Column3\\d{1,3}[A-Z]{1,3}",
+            "Size":250,
+            "Group":1
+        },
+        "Column4": {
+            "Pattern":"Column4\\d{1,3}[A-Z]{1,3}",
+            "Size":250
+        },
+        "Column5": {
+            "Pattern":"Column4\\d{1,3}[A-Z]{1,3}",
+            "Group":1
+        },
+        "Column6": {
+            "Pattern":"Column6\\d{1,3}[A-Z]{1,3}"
+        }
+
     }
 }
