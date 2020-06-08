@@ -6,59 +6,127 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/lucasjones/reggen"
 )
 
 func main() {
 	//timer
-	// start := time.Now()
+	start := time.Now()
 
 	configPath := getConfigPath()
 	fileName, rowsLimit, columns := readConfig(configPath)
-	fmt.Printf("Writing %d rows to %v with column names: %v \n", rowsLimit, fileName, columns)
+	columnNames := getMapKeys(columns)
+	fmt.Printf("Writing %d rows to %v with column names:\n %v \n", rowsLimit, fileName, columnNames)
 
 	//write column headings
 	os.Remove(fileName)
-	columnNames := getMapKeys(columns)
 	writeToFile(strings.Join(columnNames[:], ",")+"\n", fileName)
 
-	presets, mappings := generatePresets(columns)
-	fmt.Printf("%v", presets)
-	// //run goroutine jobs to generate rows
-	// goroutineSize := runtime.NumCPU() * 4
-	// fmt.Printf("Go Routine Size: %d \n", goroutineSize)
-	// rowDataChan := make(chan string)
-	// for i := 1; i < goroutineSize; i++ {
-	// 	go generateRows(columnPatterns, rowDataChan)
-	// }
+	columnsByGroup, presets, mappings := generatePresets(columns)
+	//run goroutine jobs to generate rows
+	goroutineSize := runtime.NumCPU() * 4
+	fmt.Printf("Go Routine Size: %d \n", goroutineSize)
+	rowDataChan := make(chan string)
+	for i := 1; i < goroutineSize; i++ {
+		go generateRows(columns, columnsByGroup, presets, mappings, rowDataChan)
+	}
 
-	// //write data to files
-	// var rows []string
-	// writeThreshold := 500000
-	// writtenRows := 0
-	// for {
-	// 	rows = append(rows, <-rowDataChan)
-	// 	if len(rows) >= min(rowsLimit-writtenRows, writeThreshold) {
-	// 		writeToFile(strings.Join(rows[:], "\n"), fileName)
-	// 		writtenRows += min(rowsLimit-writtenRows, writeThreshold)
-	// 		progress := float64(writtenRows) / float64(rowsLimit) * 100
-	// 		fmt.Printf("%.2f %% : Written %d rows to file %v \n", progress, writtenRows, fileName)
-	// 		rows = rows[:0]
-	// 		if writtenRows >= rowsLimit {
-	// 			break
-	// 		}
-	// 	}
-	// }
-	// close(rowDataChan)
-	// fmt.Printf("Total Time used: %v", time.Since(start))
+	//write data to files
+	var rows []string
+	writeThreshold := 500000
+	writtenRows := 0
+	for {
+		rows = append(rows, <-rowDataChan)
+		if len(rows) >= min(rowsLimit-writtenRows, writeThreshold) {
+			writeToFile(strings.Join(rows[:], "\n"), fileName)
+			writtenRows += min(rowsLimit-writtenRows, writeThreshold)
+			progress := float64(writtenRows) / float64(rowsLimit) * 100
+			fmt.Printf("%.2f %% : Written %d rows to file %v \n", progress, writtenRows, fileName)
+			rows = rows[:0]
+			if writtenRows >= rowsLimit {
+				break
+			}
+		}
+	}
+	close(rowDataChan)
+	fmt.Printf("Total Time used: %v", time.Since(start))
 }
 
-func generatePresets(columns map[string]interface{}) (presets map[string][]string, mappings map[string]map[string]string) {
-	sortedByGroupMap := make(map[int][]interface{})
+func generateRows(columns map[string]interface{}, columnsByGroup map[int][]interface{}, presets map[string][]string, mappings map[string]map[string]string, rowDataChan chan string) {
+	defer func() {
+		if r := recover().(error); r != nil {
+			if r.Error() != "send on closed channel" {
+				fmt.Printf("Recovering from panic in generateRows, error: %v \n", r)
+			}
+		}
+	}()
+
+	rand.Seed(time.Now().Unix())
+
+	for {
+		columnNames := getMapKeys(columns)
+		columnMap := make(map[string]string)
+		for _, v := range columnsByGroup {
+			//generate columns inside the group to maintain the relationship
+			//It starts from the biggest size then mapping to the smallest
+			lastColumn := v[len(v)-1]
+			key := getMapKeys(lastColumn.(map[string]interface{}))[0]
+			columnMap[key] = presets[key][rand.Intn(len(presets[key]))]
+			mappingKey := key + columnMap[key]
+			mapping := mappings[mappingKey]
+			i := 1
+			for i < len(v) {
+				//map all columns in a group
+				columnMap[mapping["Column"]] = mapping["Value"]
+				mappingKey = mapping["Column"] + mapping["Value"]
+				mapping = mappings[mappingKey]
+				i++
+			}
+		}
+
+		var row []string
+		//顺序有问题
+		for _, name := range columnNames {
+			value, found := columnMap[name]
+			if !found {
+				columnPreset, found := presets[name]
+				if found {
+					value = columnPreset[rand.Intn(len(columnPreset))]
+				} else {
+					pattern := columns[name].(map[string]interface{})["Pattern"].(string)
+					value, _ = reggen.Generate(pattern, math.MaxInt8)
+				}
+			}
+			row = append(row, value)
+		}
+		rowDataChan <- strings.Join(row[:], ",")
+	}
+
+	// var generators []reggen.Generator
+	// for _, pattern := range columnPatterns {
+	// 	generators = append(generators, createGenerator(pattern))
+	// }
+
+	// for {
+	// 	var row []string
+	// 	for _, generator := range generators {
+	// 		data := generator.Generate(math.MaxInt8)
+	// 		row = append(row, data)
+	// 	}
+	// 	rowDataChan <- strings.Join(row[:], ",")
+	// }
+}
+
+func generatePresets(columns map[string]interface{}) (columnsByGroup map[int][]interface{}, presets map[string][]string, mappings map[string]map[string]string) {
+	fmt.Printf("Preparing Relationships Model... \n")
+	columnsByGroup = make(map[int][]interface{})
 	presets = make(map[string][]string)
 	mappings = make(map[string]map[string]string)
 	for k, v := range columns {
@@ -85,10 +153,10 @@ func generatePresets(columns map[string]interface{}) (presets map[string][]strin
 		group := int(v.(map[string]interface{})["Group"].(float64))
 		column := make(map[string]interface{})
 		column[k] = v
-		sortedByGroupMap[group] = append(sortedByGroupMap[group], column)
+		columnsByGroup[group] = append(columnsByGroup[group], column)
 	}
 
-	for _, v := range sortedByGroupMap {
+	for _, v := range columnsByGroup {
 		//sort the group by size in asc as smaller size table will need to generate first and bigger size table will use them as reference
 		sort.Slice(v, func(i, j int) bool {
 			//get the map keys
@@ -135,7 +203,7 @@ func generatePresets(columns map[string]interface{}) (presets map[string][]strin
 			}
 		}
 	}
-	return presets, mappings
+	return columnsByGroup, presets, mappings
 }
 
 func unique(strSlice []string) []string {
@@ -203,31 +271,6 @@ func writeToFile(content string, fileName string) {
 	_, err = f.WriteString(content)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func generateRows(columnPatterns []string, rowDataChan chan string) {
-	defer func() {
-		if r := recover().(error); r != nil {
-			if r.Error() != "send on closed channel" {
-				fmt.Printf("Recovering from panic in generateRows, error: %v \n", r)
-			}
-		}
-	}()
-
-	var generators []reggen.Generator
-
-	for _, pattern := range columnPatterns {
-		generators = append(generators, createGenerator(pattern))
-	}
-
-	for {
-		var row []string
-		for _, generator := range generators {
-			data := generator.Generate(math.MaxInt8)
-			row = append(row, data)
-		}
-		rowDataChan <- strings.Join(row[:], ",")
 	}
 }
 
