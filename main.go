@@ -20,6 +20,10 @@ func main() {
 	//timer
 	start := time.Now()
 
+	//set up goroutine
+	goroutineSize := runtime.NumCPU() * 4
+	fmt.Printf("Set up Go Routine Size: %d \n", goroutineSize)
+
 	configPath := getConfigPath()
 	fileName, rowsLimit, columns := readConfig(configPath)
 	columnNames := getMapKeys(columns)
@@ -30,9 +34,7 @@ func main() {
 	writeToFile(strings.Join(columnNames[:], ",")+"\n", fileName)
 
 	columnsByGroup, presets, mappings := generatePresets(columns)
-	//run goroutine jobs to generate rows
-	goroutineSize := runtime.NumCPU() * 4
-	fmt.Printf("Go Routine Size: %d \n", goroutineSize)
+
 	rowDataChan := make(chan string)
 	for i := 1; i < goroutineSize; i++ {
 		go generateRows(columns, columnsByGroup, presets, mappings, rowDataChan)
@@ -92,36 +94,25 @@ func generateRows(columns map[string]interface{}, columnsByGroup map[int][]inter
 		}
 
 		var row []string
-		//顺序有问题
 		for _, name := range columnNames {
+			//check if it is part of the mapping data above
 			value, found := columnMap[name]
 			if !found {
+				//check if it is in presets
 				columnPreset, found := presets[name]
 				if found {
 					value = columnPreset[rand.Intn(len(columnPreset))]
 				} else {
+					//generate new value if it is not from preset or mapping data
 					pattern := columns[name].(map[string]interface{})["Pattern"].(string)
 					value, _ = reggen.Generate(pattern, math.MaxInt8)
 				}
 			}
 			row = append(row, value)
 		}
+		//send it back to chan
 		rowDataChan <- strings.Join(row[:], ",")
 	}
-
-	// var generators []reggen.Generator
-	// for _, pattern := range columnPatterns {
-	// 	generators = append(generators, createGenerator(pattern))
-	// }
-
-	// for {
-	// 	var row []string
-	// 	for _, generator := range generators {
-	// 		data := generator.Generate(math.MaxInt8)
-	// 		row = append(row, data)
-	// 	}
-	// 	rowDataChan <- strings.Join(row[:], ",")
-	// }
 }
 
 func generatePresets(columns map[string]interface{}) (columnsByGroup map[int][]interface{}, presets map[string][]string, mappings map[string]map[string]string) {
@@ -219,9 +210,10 @@ func unique(strSlice []string) []string {
 }
 
 func getMapKeys(item map[string]interface{}) (keys []string) {
-	for k, _ := range item {
+	for k := range item {
 		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 	return keys
 }
 
