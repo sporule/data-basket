@@ -20,6 +20,9 @@
 - Easy to use, generate data through json config file
 - Parallelism (Default to CPU Cores * 4)
 
+## Known Bugs
+
+- It may generate duplicate records in windows/
 
 ## Quick Start
 
